@@ -8,3 +8,4 @@ My repository to upload scripts with everything I'm learning about symbolic exec
 * [Synthesizing (obfuscated) expressions](https://github.com/JonathanSalwan/Triton/issues/1074): It contains explanation about synthesizing MBA expressions.
 * [From an obfuscated function to a synthesized LLVM IR](https://github.com/JonathanSalwan/Triton/issues/1078): Lifting obfuscated functions to LLVM IR and synthesizing them to obtain a simpler function.
 * [Dead Store Elimination](https://github.com/JonathanSalwan/Triton/issues/1130): Using Triton for dead code elimination in assembly code.
+* [Stubs code to avoid emulation](https://github.com/JonathanSalwan/Triton/issues/1156): Code for avoiding emulating some libc code, including it inside of the engine.

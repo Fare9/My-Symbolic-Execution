@@ -4,8 +4,8 @@
         <SAVE_STATE>
             <ARRAY NAME="EXPANDED_PATHS" TYPE="string">
                 <A VALUE="crackmes:tigress-protections:" />
-                <A VALUE="crackmes:" />
                 <A VALUE="crackmes:tigress-protections:Level 0000:" />
+                <A VALUE="crackmes:" />
             </ARRAY>
             <STATE NAME="SHOW_TABLE" TYPE="boolean" VALUE="false" />
         </SAVE_STATE>

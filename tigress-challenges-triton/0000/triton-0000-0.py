@@ -10,8 +10,17 @@ import lief
 import sys
 import os
 
+DEBUG=True
+output_file="tigress-0000-0-instructions.txt"
+output_f = None
+
+if DEBUG:
+    output_f = open(output_file, 'w')
+
+LOG_INSTRUCTION_VM = False
+
 # Target binary
-TARGET="/opt/sources/example_symbolic_execution/tigress-challenges/Linux-x86_64/0000/challenge-0"
+TARGET="/opt/sources/My-Symbolic-Execution/tigress-challenges/Linux-x86_64/0000/challenge-0"
 
 # Global settings
 SYMBOLIC = True
@@ -195,12 +204,28 @@ def emulate(ctx, pc):
     Emulation method, here we will go instruction by instruction,
     and finally we will try to lift and simplify methods.
     '''
+    global LOG_INSTRUCTION_VM
+    global DEBUG
+    global output_f
+
     while pc:
         opcodes = ctx.getConcreteMemoryAreaValue(pc, 16)
 
         # create the instruction to emulate
         instruction = Instruction(pc, opcodes)
         ctx.processing(instruction)
+
+        if pc == 0x004006d1:
+            LOG_INSTRUCTION_VM = True
+        
+        if pc == 0x0040068f:
+            LOG_INSTRUCTION_VM = False
+
+        if DEBUG:
+            if LOG_INSTRUCTION_VM:
+                output_f.write(str(instruction) + '\n')
+
+                
 
         # stop if halt executed
         # or in case we reached the address
@@ -240,13 +265,21 @@ def print_expression_and_lift(ctx):
 
     print()
     
-    #deobfu = ctx.synthesize(rax, opaque=False, constant=True, subexpr=True)
     M = ctx.liftToLLVM(rax, fname="tigress_analytica", optimize=True)
     print("[+] Lifting path to LLVM IR, this will be optimize for precission")
     print()
     print(M)
 
+    print()
+
+    R = ctx.liftToLLVM(rax, fname="tigress_analytica_obf", optimize=False)
+    print("[+] Lifting path to LLVM IR, this will not be optimized")
+    print()
+    print(R)
+
 def main():
+    global output_f
+
     # Get a triton context
     ctx = TritonContext(ARCH.X86_64)
 
@@ -255,6 +288,7 @@ def main():
     ctx.setMode(MODE.CONSTANT_FOLDING, True)
     ctx.setMode(MODE.AST_OPTIMIZATIONS, True)
 
+    # parse target binary with lief
     binary = lief.parse(TARGET)
 
     loadBinary(ctx, binary)
@@ -267,5 +301,9 @@ def main():
 
     print_expression_and_lift(ctx)
 
+    if DEBUG:
+        output_f.close()
+
 if __name__ == "__main__":
     main()
+    
