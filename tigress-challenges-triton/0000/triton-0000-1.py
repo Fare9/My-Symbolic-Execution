@@ -11,7 +11,7 @@ import sys
 import os
 
 DEBUG=True
-output_file="tigress-0000-0-instructions.txt"
+output_file="tigress-0000-1-instructions.txt"
 output_f = None
 
 if DEBUG:
@@ -20,7 +20,7 @@ if DEBUG:
 LOG_INSTRUCTION_VM = False
 
 # Target binary
-TARGET="../../tigress-challenges/Linux-x86_64/0000/challenge-0"
+TARGET="../../tigress-challenges/Linux-x86_64/0000/challenge-1"
 
 # Global settings
 SYMBOLIC = True
@@ -217,10 +217,10 @@ def emulate(ctx, pc):
         instruction = Instruction(pc, opcodes)
         ctx.processing(instruction)
 
-        if pc == 0x004006d1:
+        if pc == 0x004005f4:
             LOG_INSTRUCTION_VM = True
         
-        if pc == 0x0040068f:
+        if pc == 0x00400d8a:
             LOG_INSTRUCTION_VM = False
 
         if DEBUG:
@@ -232,9 +232,9 @@ def emulate(ctx, pc):
         # stop if halt executed
         # or in case we reached the address
         # where value was calculated!
-        if instruction.getType() == OPCODE.X86.HLT or pc == 0x004006a2:
+        if instruction.getType() == OPCODE.X86.HLT or pc == 0x00400d9d:
             break
-        
+
         if LOG_INSTRUCTION_VM:
             if instruction.getDisassembly().lower() == "jmp rax":
                 rax_value = ctx.getConcreteRegisterValue(ctx.registers.rax)
@@ -259,7 +259,6 @@ def print_expression_and_lift(ctx):
     rax_ast = ast.unroll(rax)
 
     simplified_rax = ctx.simplify(rax, solver=False, llvm=True)
-    synthetized_rax = ctx.synthesize(rax)
 
     print()
     print()
@@ -270,16 +269,13 @@ def print_expression_and_lift(ctx):
     print("[!] Expression simplified with LLVM:")
     print(simplified_rax)
 
-    print("[!] Synthetize expression:")
-    print(synthetized_rax)
-
     rax_concrete_value = ctx.getConcreteRegisterValue(ctx.registers.rax)
 
     print("\n\nConcrete output value from 0x4141414141414141: 0x%08X\n\n" % (rax_concrete_value))
 
     print()
     
-    M = ctx.liftToLLVM(simplified_rax, fname="tigress_analytica", optimize=True)
+    M = ctx.liftToLLVM(rax, fname="tigress_analytica", optimize=True)
     print("[+] Lifting path to LLVM IR, this will be optimize for precission")
     print()
     print(M)
