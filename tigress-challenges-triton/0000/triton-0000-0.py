@@ -20,7 +20,7 @@ if DEBUG:
 LOG_INSTRUCTION_VM = False
 
 # Target binary
-TARGET="../../tigress-challenges/Linux-x86_64/0000/challenge-0"
+TARGET=os.path.join(os.path.dirname(__file__), "../../tigress-challenges/Linux-x86_64/0000/challenge-0")
 
 # Global settings
 SYMBOLIC = True
@@ -63,7 +63,7 @@ def libc_start_main(ctx):
     # here write all the needed arguments
     argvs = [
         bytes(TARGET.encode('utf-8')),  # argv[0]
-        b'ojetedevaca'
+        b'test'
     ]
 
     # Define argc / argv
@@ -248,6 +248,7 @@ def emulate(ctx, pc):
     
     print("[+] Number of run handlers: %d" % (run_handlers))
 
+
 def print_expression_and_lift(ctx):
     '''
     Method to print the expression from the number,
@@ -259,7 +260,7 @@ def print_expression_and_lift(ctx):
     rax_ast = ast.unroll(rax)
 
     simplified_rax = ctx.simplify(rax, solver=False, llvm=True)
-    synthetized_rax = ctx.synthesize(rax)
+    #synthetized_rax = ctx.synthesize(rax)
 
     print()
     print()
@@ -270,8 +271,8 @@ def print_expression_and_lift(ctx):
     print("[!] Expression simplified with LLVM:")
     print(simplified_rax)
 
-    print("[!] Synthetize expression:")
-    print(synthetized_rax)
+    #print("[!] Synthetize expression:")
+    #print(synthetized_rax)
 
     rax_concrete_value = ctx.getConcreteRegisterValue(ctx.registers.rax)
 

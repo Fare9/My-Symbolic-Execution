@@ -20,7 +20,7 @@ if DEBUG:
 LOG_INSTRUCTION_VM = False
 
 # Target binary
-TARGET="../../tigress-challenges/Linux-x86_64/0000/challenge-1"
+TARGET=os.path.join(os.path.dirname(__file__), "../../tigress-challenges/Linux-x86_64/0000/challenge-1")
 
 # Global settings
 SYMBOLIC = True
@@ -63,7 +63,7 @@ def libc_start_main(ctx):
     # here write all the needed arguments
     argvs = [
         bytes(TARGET.encode('utf-8')),  # argv[0]
-        b'ojetedevaca'
+        b'test'
     ]
 
     # Define argc / argv
