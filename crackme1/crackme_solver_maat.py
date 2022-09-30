@@ -7,7 +7,7 @@ from maat import *
 # first of all let's create the engine and load
 # the binary
 m = MaatEngine(ARCH.X64, OS.LINUX)
-m.load('crackme/crackme1', BIN.ELF64, base=0x04000000, libdirs=["crackme/"])
+m.load('crackme1', BIN.ELF64, base=0x04000000, libdirs=["./"])
 
 # Fill stdin with 8 bytes of concolic input
 # On a single-processs linux environment, stdin handle is 
@@ -25,7 +25,7 @@ buf = m.vars.new_concolic_buffer(
 # write the buffer into stdin
 stdin.write_buffer(buf)
 
-def branch_serial_callback(m: MaatEngine):
+def branch_serial_callback(m: MaatEngine, n):
     # check that the branch we are using
     # is the one of the check
     if m.info.addr == 0x040008b1:

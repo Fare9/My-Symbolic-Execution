@@ -14,7 +14,7 @@ vm_file = "./vm_basic.bin"
 engine = None
 vm_entry_point = 0x115a
 vm_exit_point = 0x1261
-vm_argument = 0x01
+vm_argument = 10
 
 vm_code_start = 0x4060
 vm_code_size = 0x4140 - 0x4060
@@ -33,7 +33,7 @@ VM_HANDLERS = set([
     0x1226,
 ])
 
-def instr_before(engine: MaatEngine):
+def instr_before(engine: MaatEngine, n):
 
     address = engine.info.addr
     vip = engine.cpu.rdx.as_uint()
@@ -82,7 +82,7 @@ def instr_before(engine: MaatEngine):
         first_value = engine.mem.read(engine.cpu.rcx.as_uint(), 4)
         second_value = engine.mem.read(engine.cpu.rcx.as_uint() - 8, 4)
 
-        print(f"0x{vip:04X}: *[VM_STACK] = *[VM_STACK] (=> 0x{first_value:x}) + *[VM_STACK-8] (=> 0x{second_value:x})")
+        print(f"0x{vip:04X}: *[VM_STACK] = *[VM_STACK] (=> 0x{first_value.as_uint():X}) + *[VM_STACK-8] (=> 0x{second_value.as_uint():X})")
     
     elif address == 0x1245:
         print(f"0x{vip:04X}: RET")
@@ -119,7 +119,7 @@ def instr_before(engine: MaatEngine):
         value = engine.mem.read(engine.cpu.rcx.as_uint(), 4)
         print(f"0x{vip:04X}: POP VAR (=> 0x{value.as_uint():x}")
 
-def instr_after(engine: MaatEngine):
+def instr_after(engine: MaatEngine, n):
 
     address = engine.info.addr
 
@@ -127,7 +127,7 @@ def instr_after(engine: MaatEngine):
         print(f"[!] After instruction at address 0x{address:08X}")
 
 
-def vm_end(engine: MaatEngine):
+def vm_end(engine: MaatEngine, n):
     print(f"[!] End of VM execution returned value = {engine.cpu.rax.as_uint()}")
     return ACTION.HALT
 

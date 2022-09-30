@@ -1,11 +1,13 @@
 VERSION=1
 /
   00000000:crackme1:c0a818aa37510320544326073
+/fibonacci
+  00000006:vm_basic.bin:c0a818a9ae525253215547800
 /tigress-protections
 /tigress-protections/Level 0000
   00000001:challenge-0:c0a818a9af98623882617921
   00000004:challenge-1:c0a818aa2732528391646779
   00000003:tigress-0000-0-expression:c0a818a8c1513462372457191
   00000005:tigress-0000-1-expression:c0a818ab4716509387249911
-NEXT-ID:6
+NEXT-ID:7
 MD5:d41d8cd98f00b204e9800998ecf8427e

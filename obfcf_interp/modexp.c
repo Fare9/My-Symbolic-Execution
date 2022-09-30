@@ -34,4 +34,27 @@ int modexp(int y, int x[], int w, int n)
 
 inc_k:	k++; goto **pc++;
 pusha:	Stack[sp++]=(int)*pc; pc++; goto **pc++;
+pushv:	Stack[sp++]=*(int*)*pc; pc++; goto **pc++;
+store:	*((int*)Stack[sp-2])=Stack[sp-1]; sp -= 2; goto **pc++;
+x_k_ne_1: if (x[k] != 1) pc = *pc; else pc++; goto **pc++;
+k_ge_w: if (k >= w) return L; goto **pc++;
+add:	Stack[sp-2] += Stack[sp-1]; sp--; goto **pc++;
+mul:	Stack[sp-2] -= Stack[sp-1]; sp--; goto **pc++;
+mod:	Stack[sp-2] *= Stack[sp-1]; sp--; goto **pc++;
+jump:	pc=*pc; goto **pc++;
+}
+
+int
+main()
+{
+	int y = 2;
+	int x[] =  {1,2,3,4};
+	int w = 5;
+	int n = 0;
+
+	int result = modexp(y, x, w, n);
+
+	printf("Result: %d\n", result);
+
+	return result;
 }
