@@ -23,14 +23,16 @@ ERRNO      = 0xa0000000
 # Values to do the symbolic execution
 
 MEM_ADDRESS_BUFFER = None
-# address where to start running
-START_ADDR = 0x00001288
+
+# address where we can add the constraints of the conditions
 FIRST_CONDITIONAL = 0x000012bf
 SECOND_CONDITIONAL = 0x000012e0
 THIRD_CONDITIONAL = 0x000013c5
 FOURTH_CONDITIONAL = 0x00001447
+# last address of last constraint
 FIFTH_CONDITIONAL = 0x00001492
 
+# address of the loops to bypass
 FIRST_LOOP = 0x000013ce
 SECOND_LOOP = 0x00001452
 
@@ -39,20 +41,31 @@ Solver for the different parts of the code
 """
 def solver_check(ctx, register, CHECK_VALUE, solve = False, show_ast = False):
     '''
-    Solve the first check of the challenge
+    Apply constraints to the challenge given a register,
+    and the value to check, this function will also be useful
+    to solve the final challenge, and also it will be possible
+    to show the ast
+    :param ctx: Triton context, it provides access to all the utilities from Triton
+    :param register: register where to apply the constraint
+    :param CHECK_VALUE: value checked and the one used to add the constraint
+    :param solve: solve the expression with all the different constraints
+    :param show_ast: optionally show the AST of the expression
     '''
 
-    # get value
+    # get the register AST
     reg = ctx.getRegisterAst(register)
     
+    # add the constraint
     ctx.pushPathConstraint(reg == CHECK_VALUE)
     
     if show_ast:
+        # in case user wants, show the AST of the expression
         ast = ctx.getAstContext()
         reg_ast = ast.unroll(reg)
         print(reg_ast)
 
     if (solve):
+        # solve and retrieve the flag
         cstr = ctx.getPathPredicate()
         m = ctx.getModel(cstr)
         key_values = {}
@@ -69,7 +82,8 @@ def solver_check(ctx, register, CHECK_VALUE, solve = False, show_ast = False):
         print("\n\n------------------------------------------")
         print(f"Flag={flag}")
         print("------------------------------------------\n\n")
-
+    # to meet the comparison, set the value of the register
+    # to the value checked.
     ctx.setConcreteRegisterValue(register, CHECK_VALUE)
 
 
@@ -82,6 +96,9 @@ def getMemoryString(ctx, addr):
     Function to extract a python string from
     a memory address, we will read a c-style
     string, reading the concrete memory value.
+
+    :param ctx: Triton context with utilities
+    :param addr: address with the string.
     '''
     s = str()
     index = 0
@@ -110,27 +127,33 @@ def strncpy(triton_ctx):
     # save the value
     MEM_ADDRESS_BUFFER = rdi
 
+    # because we want the password to have only ASCII values,
+    # retrieve the minimum possible value
+    # and the maximum value 
     valid_characters = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~"
     min_value = ord(min(valid_characters))
     max_value = ord(max(valid_characters))
 
     for i in range(0x18):
+        memory_byte = MemoryAccess(rdi+i, CPUSIZE.BYTE)
         # set first a concrete value (concolic)
-        triton_ctx.setConcreteMemoryValue(MemoryAccess(rdi+i, CPUSIZE.BYTE), 61)
+        triton_ctx.setConcreteMemoryValue(memory_byte, 61)
         # symbolize the memory address for extracting the expression
-        triton_ctx.symbolizeMemory(MemoryAccess(rdi+i, CPUSIZE.BYTE), "flag_%d" % (i))
-        # add some constraints
-        triton_ctx.pushPathConstraint(triton_ctx.getMemoryAst(MemoryAccess(rdi+i, CPUSIZE.BYTE)) >= min_value)
-        triton_ctx.pushPathConstraint(triton_ctx.getMemoryAst(MemoryAccess(rdi+i, CPUSIZE.BYTE)) <= max_value)
+        triton_ctx.symbolizeMemory(memory_byte, "flag_%d" % (i))
+        # add the ascii string constraints
+        triton_ctx.pushPathConstraint(triton_ctx.getMemoryAst(memory_byte) >= min_value)
+        triton_ctx.pushPathConstraint(triton_ctx.getMemoryAst(memory_byte) <= max_value)
 
     # finally set a 0 value (end of string)
     triton_ctx.setConcreteMemoryValue(MemoryAccess(rdi+0x18, CPUSIZE.BYTE), 0)
-
+    # return the strncpy value as a concrete value
     return (CONCRETE, 0x18)
 
 def libc_start_main(ctx):
     '''
-    Emulation of libc start...
+    Emulation of libc start, here we will set the
+    arguments giving them an address in memory and
+    copying the values into that memory.
     '''
     print('[+] __libc_start_main hooked')
 
@@ -181,6 +204,9 @@ def libc_start_main(ctx):
 
     return (CONCRETE, 0)
 
+# this structure will be useful during emulation
+# whenever the emulation jumps to any of the functions
+# from the first field, use the second fields as hook.
 customRelocation = [
     ['strncpy', strncpy, None],
     ['__libc_start_main', libc_start_main, None]
@@ -271,6 +297,10 @@ def emulate(ctx, pc):
     :param pc: the program counter value where to start and continue.
     :valut_to_check: value to check once we wants to stop the execution.
     '''
+    
+    # This structure will be used for applying the constraints in certain
+    # addresses from the program, give a register to apply the constraint
+    # and the value used during the comparison.
     check_register_value = [
         [FIRST_CONDITIONAL, ctx.registers.eax, 0x1cd4], # 0x000012bf
         [SECOND_CONDITIONAL, ctx.registers.eax, 0xd899], # 0x000012e0
@@ -279,32 +309,36 @@ def emulate(ctx, pc):
         [FIFTH_CONDITIONAL, ctx.registers.r8, 0x231f0b21595d0455] # 0x00001492
     ]
 
+    # Structure used to jump over the decryption loops which are
+    # not useful for the analysis
     loop_address_dest = [
         [FIRST_LOOP, 0x0000141d],
         [SECOND_LOOP, 0x00001483]
     ]
 
+    # emulation loop
     while pc:
 
         #print("[-] Running instruction at address: 0x%08X" % (pc))
-
         opcodes = ctx.getConcreteMemoryAreaValue(pc, 16)
-
         instruction = Instruction(pc, opcodes)
 
-        # call to not interested functions
+        # call a not implemented function, jump over it
+        # adding the length of a call instruction
         if pc in [0x0000124a, 0x00001254, 0x0000126d]:
             print("Not emulated function, continue")
             pc = ctx.getConcreteRegisterValue(ctx.registers.rip)
             pc += 5
             continue
-        # avoid loops
+        # avoid decryption loops
         avoid_loop = False
         for val in loop_address_dest:
             if pc == val[0]:
                 print("Decryption loop address 0x%08X, moving to 0x%08X" % (val[0], val[1]))
                 pc = val[1]
                 avoid_loop = True
+                break
+
         if avoid_loop:
             continue
 
@@ -313,16 +347,19 @@ def emulate(ctx, pc):
             if pc == val[0]:
                 print("Checking at address: 0x%08X" % (val[0]))
                 if pc == FIFTH_CONDITIONAL:
+                    # in this case provide True for solving the expression
                     solver_check(ctx, val[1], val[2], True)
                     return
                 else:
                     solver_check(ctx, val[1], val[2])
 
+        # process the instruction
         ret = ctx.processing(instruction)
-
+        # if HALT, finish the execution
         if instruction.getType() == OPCODE.X86.HLT:
             break
-            
+        # apply one of the handlers that are not provided by
+        # Triton
         hookingHandler(ctx)
 
         # Next
