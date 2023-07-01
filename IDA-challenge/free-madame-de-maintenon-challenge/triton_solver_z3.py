@@ -329,11 +329,11 @@ def emulate(ctx, pc):
     # addresses from the program, give a register to apply the constraint
     # and the value used during the comparison.
     check_register_value = [
-        [FIRST_CONDITIONAL, ctx.registers.zf, 1],  # 0x000012bf
-        [SECOND_CONDITIONAL, ctx.registers.zf, 1],  # 0x000012e0
-        [THIRD_CONDITIONAL, ctx.registers.zf, 1],  # 0x000013c5
-        [FOURTH_CONDITIONAL, ctx.registers.zf, 1],  # 0x00001447
-        [FIFTH_CONDITIONAL, ctx.registers.zf, 1]  # 0x00001492
+        FIRST_CONDITIONAL,
+        SECOND_CONDITIONAL,
+        THIRD_CONDITIONAL,
+        FOURTH_CONDITIONAL,
+        FIFTH_CONDITIONAL,
     ]
 
     # Structure used to jump over the decryption loops which are
@@ -380,15 +380,14 @@ def emulate(ctx, pc):
             break
 
         # conditions
-        for val in check_register_value:
-            if pc == val[0]:
-                print("Checking at address: 0x%08X" % (val[0]))
-                zf = ctx.getSymbolicRegister(ctx.registers.zf).getAst()
-                ast = ctx.getAstContext()
-                pco = ctx.getPathPredicate()
-                model = myExternalSolver(ctx, zf == 1, pc)
-                for k, v in list(model.items()):
-                    ctx.setConcreteVariableValue(ctx.getSymbolicVariable(k), v)
+        if pc in check_register_value:
+            print("Checking at address: 0x%08X" % (val[0]))
+            zf = ctx.getSymbolicRegister(ctx.registers.zf).getAst()
+            ast = ctx.getAstContext()
+            pco = ctx.getPathPredicate()
+            model = myExternalSolver(ctx, zf == 1, pc)
+            for k, v in list(model.items()):
+                ctx.setConcreteVariableValue(ctx.getSymbolicVariable(k), v)
 
         # solve the equation and retrieve the whole Password
         if pc == 0x0000149b:
